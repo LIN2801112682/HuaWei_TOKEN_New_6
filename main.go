@@ -21,6 +21,7 @@ func main() {
 	fmt.Println("字典树D内存占用大小：")
 	//traceMemStats()
 	fmt.Println()
+
 	root := dictionary.GenerateDictionaryTree("src/resources/5000Dic.txt", 1, 2, 40) //
 	fmt.Println()
 	//traceMemStats()
