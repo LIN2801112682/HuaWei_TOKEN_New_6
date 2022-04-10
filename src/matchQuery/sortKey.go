@@ -1,4 +1,4 @@
-package matchQuery2
+package matchQuery
 
 type SortKey struct {
 	sizeOfInvertedList int

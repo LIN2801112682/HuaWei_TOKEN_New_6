@@ -49,42 +49,54 @@ func NewIndexTree(qmin int, qmax int) *IndexTree {
 	}
 }
 
-//将gram插入trieTree上
-//trieTree:待插入的树
-//token:待插入数组字符串
-//sid:字符串所属sid
-//position:字符串在sid中的位置
-func (tree *IndexTree) InsertIntoIndexTree(token *[]string, sid SeriesId, position int) {
-	//初始化node、qmin
+func (tree *IndexTree) InsertIntoIndexTree(token []string, sid SeriesId, position int) *IndexTreeNode {
 	node := tree.root
-	//qmin := tree.qmin
-	// 孩子节点在childrenlist中的位置
-	var childindex = 0
-	for i, str := range *token {
-		childindex = GetIndexNode(node.children, (*token)[i])
-		if childindex == -1 {
-			// childrenlist里没有该节点
-			currentnode := NewIndexTreeNode(str)
-			node.children = append(node.children, currentnode)
-			node = currentnode
+	var childIndex = -1
+	var addr *IndexTreeNode
+	for i, str := range token {
+		childIndex = GetIndexNode(node.children, token[i])
+		if childIndex == -1 {
+			currentNode := NewIndexTreeNode(str)
+			node.children = append(node.children, currentNode)
+			node = currentNode
 		} else {
-			//childrenlist里有该节点
-			//childrenindex为该节点在数组中的位置
-			node = node.children[childindex]
+			node = node.children[childIndex]
 			node.frequency++
 		}
-		//从root的孩子节点开始判断，少一层故大于等于 qmin-1 不是qmin
-		//if i >= qmin-1 {
-		//	node.isleaf = true
-		//}
-		if i == len(*token)-1 {
-			//InsertInvertedIndex(node, sid, position)
-			//叶子节点，需要挂倒排链表
+		if i == len(token)-1 {
 			node.isleaf = true
-			if _, ok := node.invertedIndex[sid]; !ok { //key中没有sid 创建sid对应的倒排
+			if _, ok := node.invertedIndex[sid]; !ok {
 				node.InsertSidAndPosArrToInvertedIndexMap(sid, position)
-			} else { //寻找相同sid下增加posArray即可
+			} else {
 				node.InsertPosArrToInvertedIndexMap(sid, position)
+			}
+			addr = node
+		}
+	}
+	return addr
+}
+
+func (tree *IndexTree) InsertOnlyGramIntoIndexTree(tokenSubs []SubTokenOffset, addr *IndexTreeNode) {
+	var childIndex = -1
+	for k := 0; k < len(tokenSubs); k++ {
+		token := tokenSubs[k].subToken
+		offset := tokenSubs[k].offset
+		node := tree.root
+		for i, str := range token {
+			childIndex = GetIndexNode(node.children, token[i])
+			if childIndex == -1 {
+				currentNode := NewIndexTreeNode(str)
+				node.children = append(node.children, currentNode)
+				node = currentNode
+			} else {
+				node = node.children[childIndex]
+				node.frequency++
+			}
+			if i == len(token)-1 {
+				node.isleaf = true
+				if _, ok := node.addrOffset[addr]; !ok {
+					node.addrOffset[addr] = offset
+				}
 			}
 		}
 	}

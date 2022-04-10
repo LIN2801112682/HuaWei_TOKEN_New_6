@@ -1,4 +1,4 @@
-package matchQuery1
+package matchQuery
 
 import (
 	"index07"

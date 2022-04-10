@@ -10,46 +10,55 @@ type IndexTreeNode struct {
 	children      []*IndexTreeNode
 	isleaf        bool
 	invertedIndex Inverted_index
+	addrOffset    map[*IndexTreeNode]int
 }
 
-func (i *IndexTreeNode) Data() string {
-	return i.data
+func (node *IndexTreeNode) Data() string {
+	return node.data
 }
 
-func (i *IndexTreeNode) SetData(data string) {
-	i.data = data
+func (node *IndexTreeNode) SetData(data string) {
+	node.data = data
 }
 
-func (i *IndexTreeNode) Frequency() int {
-	return i.frequency
+func (node *IndexTreeNode) Frequency() int {
+	return node.frequency
 }
 
-func (i *IndexTreeNode) SetFrequency(frequency int) {
-	i.frequency = frequency
+func (node *IndexTreeNode) SetFrequency(frequency int) {
+	node.frequency = frequency
 }
 
-func (i *IndexTreeNode) Children() []*IndexTreeNode {
-	return i.children
+func (node *IndexTreeNode) Children() []*IndexTreeNode {
+	return node.children
 }
 
-func (i *IndexTreeNode) SetChildren(children []*IndexTreeNode) {
-	i.children = children
+func (node *IndexTreeNode) SetChildren(children []*IndexTreeNode) {
+	node.children = children
 }
 
-func (i *IndexTreeNode) Isleaf() bool {
-	return i.isleaf
+func (node *IndexTreeNode) Isleaf() bool {
+	return node.isleaf
 }
 
-func (i *IndexTreeNode) SetIsleaf(isleaf bool) {
-	i.isleaf = isleaf
+func (node *IndexTreeNode) SetIsleaf(isleaf bool) {
+	node.isleaf = isleaf
 }
 
-func (i *IndexTreeNode) InvertedIndex() Inverted_index {
-	return i.invertedIndex
+func (node *IndexTreeNode) InvertedIndex() Inverted_index {
+	return node.invertedIndex
 }
 
-func (i *IndexTreeNode) SetInvertedIndex(invertedIndex Inverted_index) {
-	i.invertedIndex = invertedIndex
+func (node *IndexTreeNode) SetInvertedIndex(invertedIndex Inverted_index) {
+	node.invertedIndex = invertedIndex
+}
+
+func (node *IndexTreeNode) AddrOffset() map[*IndexTreeNode]int {
+	return node.addrOffset
+}
+
+func (node *IndexTreeNode) SetAddrOffset(addrOffset map[*IndexTreeNode]int) {
+	node.addrOffset = addrOffset
 }
 
 func NewIndexTreeNode(data string) *IndexTreeNode {
@@ -59,7 +68,18 @@ func NewIndexTreeNode(data string) *IndexTreeNode {
 		isleaf:        false,
 		children:      make([]*IndexTreeNode, 0),
 		invertedIndex: make(map[SeriesId][]int),
+		addrOffset:    make(map[*IndexTreeNode]int),
 	}
+}
+
+//判断children有无此节点
+func GetIndexNode(children []*IndexTreeNode, str string) int {
+	for i, child := range children {
+		if child.data == str {
+			return i
+		}
+	}
+	return -1
 }
 
 func (node *IndexTreeNode) InsertPosArrToInvertedIndexMap(sid SeriesId, position int) {
@@ -74,23 +94,13 @@ func (node *IndexTreeNode) InsertSidAndPosArrToInvertedIndexMap(sid SeriesId, po
 	node.invertedIndex[sid] = posArray
 }
 
-//判断children有无此节点
-func GetIndexNode(children []*IndexTreeNode, str string) int {
-	for i, child := range children {
-		if child.data == str {
-			return i
-		}
-	}
-	return -1
-}
-
 //输出以node为根的子树
 func (node *IndexTreeNode) PrintIndexTreeNode(level int) {
 	fmt.Println()
 	for i := 0; i < level; i++ {
 		fmt.Print("      ")
 	}
-	fmt.Print(node.data, " - ", node.frequency, " - ", node.isleaf, " - ", node.invertedIndex)
+	fmt.Print(node.data, " - ", node.frequency, " - ", node.isleaf, " - ", node.invertedIndex, " - ", node.addrOffset)
 	for _, child := range node.children {
 		child.PrintIndexTreeNode(level + 1)
 	}

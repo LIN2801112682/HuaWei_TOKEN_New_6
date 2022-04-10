@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"index07"
 	_ "indexMaintain"
-	_ "matchQuery1"
-	"matchQuery2"
+	"matchQuery"
 	"runtime"
 )
 
@@ -31,7 +30,7 @@ func main() {
 	fmt.Println("索引项集内存占用大小：")
 	traceMemStats()
 	fmt.Println()
-	_, indexTreeNode := index07.GenerateIndexTree("src/resources/500000Index.txt", 1, 2, root) //
+	_, indexTreeNode := index07.GenerateIndexTree("src/resources/5000Index.txt", 1, 2, root) //
 	fmt.Println()
 	traceMemStats()
 	fmt.Println()
@@ -72,13 +71,27 @@ func main() {
 	//traceMemStats()
 	fmt.Println()*/
 
-	//resInt := matchQuery2.MatchSearch("get english", root, indexTreeNode, 1, 2)
-	var searchQuery = [9]string{"get", "get english", "get english images", "get images", "get english images team_hm_header_shad.gif http 1.0", "get images s102325 gif http 1.0", "get english history history_of images cup", "images space.gif", "get http 1.0"}
-	for i := 0; i < 9; i++ {
-		resInt := matchQuery2.MatchSearch(searchQuery[i], root, indexTreeNode, 1, 2) //get english venues
+	var searchQuery = [10]string{"get", "get english", "get english images", "get images", "get english images team_hm_header_shad.gif http 1.0", "get images s102325 gif http 1.0", "get english history history_of images cup", "images space.gif", "get http 1.0", "11187"}
+	for i := 0; i < 10; i++ {
+		resInt := matchQuery.MatchSearch(searchQuery[i], root, indexTreeNode, 1, 2) //get english venues
 		//fmt.Println(resInt)
 		fmt.Println(len(resInt))
 		fmt.Println("==================================================")
 	}
-	//fmt.Println(len(resInt))
+
+	var searchQuery2 = [10]string{"french", "nav_tickets_off.gif", "ticket_quest_bg2", "http 1.1", "1.0", "football.gif", "http", "images", "s102438", "venue_paris_stad_header.gif"} //505-1：french.htm
+	for i := 0; i < 10; i++ {
+		resInt := matchQuery.MatchSearch(searchQuery2[i], root, indexTreeNode, 1, 2) //get english venues
+		//fmt.Println(resInt)
+		fmt.Println(len(resInt))
+		fmt.Println("==================================================")
+	}
+
+	var searchQuery3 = [10]string{"nav_history_off.gif", "mascot.html", "venues", "index.html", "space.gif", "get english frntpage.htm http 1.0", "comp_stage2_brc_topr.gif", "hm_linkf.gif", "nav_bg_bottom.jpg", "cal_paris.gif"} //"comp_stage2_brc_topr", "hm_linkf", "nav_bg_bottom", "cal_paris"
+	for i := 0; i < 10; i++ {
+		resInt := matchQuery.MatchSearch(searchQuery3[i], root, indexTreeNode, 1, 2) //get english venues
+		//fmt.Println(resInt)
+		fmt.Println(len(resInt))
+		fmt.Println("==================================================")
+	}
 }

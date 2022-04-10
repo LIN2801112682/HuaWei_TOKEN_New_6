@@ -1,9 +1,10 @@
-package matchQuery2
+package matchQuery
 
 import (
+	"bytes"
 	"dictionary"
+	"encoding/gob"
 	"fmt"
-	"github.com/imdario/mergo"
 	"index07"
 	"reflect"
 	"sort"
@@ -26,16 +27,22 @@ func MatchSearch(searchStr string, root *dictionary.TrieTreeNode, indexRoot *ind
 		token := vgMap[x]
 		if token != nil {
 			invertIndex = nil
-			invertIndex2 = nil
+			var invertIndex2 index07.Inverted_index
+			var invertIndex3 index07.Inverted_index
 			SearchInvertedListFromCurrentNode(token, indexRoot, 0)
-			SearchInvertedListFromChildrensOfCurrentNode(indexNode)
-			mergo.Merge(&invertIndex, invertIndex2)
+			invertIndex2 = SearchInvertedListFromChildrensOfCurrentNode(indexNode, nil)
+			if indexNode != nil && len(indexNode.AddrOffset()) > 0 {
+				invertIndex3 = TurnAddr2InvertLists(indexNode.AddrOffset(), invertIndex3)
+			}
+			invertIndex = MergeMapsInvertLists(invertIndex2, invertIndex)
+			invertIndex = MergeMapsInvertLists(invertIndex3, invertIndex)
 			//fmt.Println(len(invertIndex))
 			sortSumInvertList = append(sortSumInvertList, NewSortKey(len(invertIndex), token))
 			sortTokenInvertList = append(sortTokenInvertList, NewSortTokenInvertList(token, invertIndex))
 		}
 	}
 
+	//fmt.Println(sortTokenInvertList)
 	sort.SliceStable(sortSumInvertList, func(i, j int) bool {
 		if sortSumInvertList[i].sizeOfInvertedList < sortSumInvertList[j].sizeOfInvertedList {
 			return true
@@ -48,7 +55,6 @@ func MatchSearch(searchStr string, root *dictionary.TrieTreeNode, indexRoot *ind
 	preSeaPosition := 0
 	var preInverPositionDis []PosList
 	var nowInverPositionDis []PosList
-	//fields := strings.Fields(searchStr)
 	start2 := time.Now().UnixMicro()
 	for m := 0; m < len(sortSumInvertList); m++ {
 		tokenArr := sortSumInvertList[m].tokenArr
@@ -60,13 +66,11 @@ func MatchSearch(searchStr string, root *dictionary.TrieTreeNode, indexRoot *ind
 				}
 			}
 			invertIndex = nil
-			invertIndex2 = nil
 			for i := 0; i < len(sortTokenInvertList); i++ {
 				if reflect.DeepEqual(sortTokenInvertList[i].tokenArr, tokenArr) {
 					invertIndex = sortTokenInvertList[i].indexList
 				}
 			}
-			//fmt.Println(len(invertIndex))
 			if invertIndex == nil {
 				return nil
 			}
@@ -113,7 +117,7 @@ func MatchSearch(searchStr string, root *dictionary.TrieTreeNode, indexRoot *ind
 	fmt.Println("精确查询划分查询串时间 + 查询索引树 + 排序gram对应倒排表list长度时间（us）：", end1-start1)
 	fmt.Println("精确查询合并倒排时间（us）：", end2-start2)
 	sort.SliceStable(resArr, func(i, j int) bool {
-		if resArr[i].Id() < resArr[j].Id() && resArr[i].Time() < resArr[j].Time() {
+		if resArr[i].Id < resArr[j].Id && resArr[i].Time < resArr[j].Time {
 			return true
 		}
 		return false
@@ -140,15 +144,79 @@ func SearchInvertedListFromCurrentNode(tokenArr []string, indexRoot *index07.Ind
 	}
 }
 
-var invertIndex2 index07.Inverted_index
-
-func SearchInvertedListFromChildrensOfCurrentNode(indexNode *index07.IndexTreeNode) {
+func SearchInvertedListFromChildrensOfCurrentNode(indexNode *index07.IndexTreeNode, invertIndex2 index07.Inverted_index) index07.Inverted_index {
 	if indexNode != nil {
 		for l := 0; l < len(indexNode.Children()); l++ {
 			if len(indexNode.Children()[l].InvertedIndex()) > 0 {
-				mergo.Merge(&invertIndex2, indexNode.Children()[l].InvertedIndex())
+				invertIndex2 = MergeMapsInvertLists(indexNode.Children()[l].InvertedIndex(), invertIndex2)
 			}
-			SearchInvertedListFromChildrensOfCurrentNode(indexNode.Children()[l])
+			if len(indexNode.Children()[l].AddrOffset()) > 0 {
+				var invertIndex3 = TurnAddr2InvertLists(indexNode.Children()[l].AddrOffset(), nil)
+				invertIndex2 = MergeMapsInvertLists(invertIndex3, invertIndex2)
+			}
+			invertIndex2 = SearchInvertedListFromChildrensOfCurrentNode(indexNode.Children()[l], invertIndex2)
 		}
 	}
+	return invertIndex2
+}
+
+func TurnAddr2InvertLists(addrOffset map[*index07.IndexTreeNode]int, invertIndex3 index07.Inverted_index) index07.Inverted_index {
+	var res index07.Inverted_index
+	for addr, offset := range addrOffset {
+		invertIndex3 = nil
+		invertIndex3 = DeepCopy(addr.InvertedIndex())
+		/*if addr != nil && len(addr.AddrOffset()) > 0 {
+			index := TurnAddr2InvertLists(addr.AddrOffset(), nil)
+			invertIndex3 = MergeMapsInvertLists(index, invertIndex3)
+		}*/
+
+		//invertIndex3 = SearchInvertedListFromChildrensOfCurrentNode(addr, invertIndex3)
+		for _, list := range invertIndex3 {
+			for i := 0; i < len(list); i++ {
+				list[i] += offset
+			}
+		}
+		res = MergeMapsInvertLists(invertIndex3, res)
+	}
+	return res
+}
+
+func MergeMapsInvertLists(map1 map[index07.SeriesId][]int, map2 map[index07.SeriesId][]int) map[index07.SeriesId][]int {
+	if len(map2) > 0 {
+		for sid1, list1 := range map1 {
+			if list2, ok := map2[sid1]; !ok {
+				map2[sid1] = list1
+			} else {
+				list2 = append(list2, list1...)
+				list2 = UniqueArr(list2)
+				sort.Ints(list2)
+				map2[sid1] = list2
+			}
+		}
+	} else {
+		map2 = DeepCopy(map1)
+	}
+	return map2
+}
+
+func UniqueArr(m []int) []int {
+	d := make([]int, 0)
+	tempMap := make(map[int]bool, len(m))
+	for _, v := range m { // 以值作为键名
+		if tempMap[v] == false {
+			tempMap[v] = true
+			d = append(d, v)
+		}
+	}
+	return d
+}
+
+func DeepCopy(src map[index07.SeriesId][]int) map[index07.SeriesId][]int {
+	var dst map[index07.SeriesId][]int
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
+		fmt.Println(err)
+	}
+	gob.NewDecoder(bytes.NewBuffer(buf.Bytes())).Decode(&dst)
+	return dst
 }

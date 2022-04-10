@@ -21,12 +21,10 @@ func GenerateIndexTree(filename string, qmin int, qmax int, root *dictionary.Tri
 		fmt.Print(err)
 	}
 	buff := bufio.NewReader(data)
-	var id int32
-	id = 0
-	var sum1 int64
-	sum1 = 0
-	var sum2 int64
-	sum2 = 0
+	var id int32 = 0
+	var sum1 int64 = 0
+	var sum2 int64 = 0
+	var sum3 int64 = 0
 	timeStamp := time.Now().Unix()
 	for {
 		start1 := time.Now().UnixMicro()
@@ -41,6 +39,7 @@ func GenerateIndexTree(filename string, qmin int, qmax int, root *dictionary.Tri
 		sid := NewSeriesId(id, timeStamp)
 		str := string(data)
 		VGCons(root, qmin, qmax, str, vgMap)
+		//.Println(vgMap)
 		var keys = []int{}
 		for key := range vgMap {
 			keys = append(keys, key)
@@ -49,12 +48,26 @@ func GenerateIndexTree(filename string, qmin int, qmax int, root *dictionary.Tri
 		sort.Sort(sort.IntSlice(keys))
 		end1 := time.Now().UnixMicro()
 		sum1 += (end1 - start1)
+
 		start2 := time.Now().UnixMicro()
+		var addr *IndexTreeNode
 		for i := 0; i < len(keys); i++ {
 			vgKey := keys[i]
 			//字符串变字符串数组
 			tokenArr := vgMap[vgKey]
-			indexTree.InsertIntoIndexTree(&tokenArr, *sid, vgKey)
+			start3 := time.Now().UnixMicro()
+			//addr = nil
+			addr = indexTree.InsertIntoIndexTree(tokenArr, sid, vgKey)
+			end3 := time.Now().UnixMicro()
+			sum3 += (end3 - start3)
+			if len(tokenArr) > qmin && len(tokenArr) <= qmax { //Generate all index entries between qmin+1 - len(gram)
+				TokenSubs = make([]SubTokenOffset, 0)
+				GenerateQmin2QmaxTokens(tokenArr, qmin)
+				start4 := time.Now().UnixMicro()
+				indexTree.InsertOnlyGramIntoIndexTree(TokenSubs, addr)
+				end4 := time.Now().UnixMicro()
+				sum3 += (end4 - start4)
+			}
 		}
 		end2 := time.Now().UnixMicro()
 		sum2 += (end2 - start2)
@@ -63,10 +76,31 @@ func GenerateIndexTree(filename string, qmin int, qmax int, root *dictionary.Tri
 	indexTree.UpdateIndexRootFrequency()
 	elapsed := time.Now().UnixMicro()
 	fmt.Println("构建索引项集总花费时间（us）：", elapsed-start)
-	fmt.Println("读取日志并划分索引项花费时间（us）：", sum1)
-	fmt.Println("插入索引树花费时间（us）：", sum2)
+	fmt.Println("读取日志并划分索引项花费时间（us）：", sum1+sum2-sum3)
+	fmt.Println("插入索引树花费时间（us）：", sum3)
 	//indexTree.PrintIndexTree()
 	return indexTree, indexTree.root
+}
+
+var TokenSubs []SubTokenOffset
+
+//func GenerateQmin2QmaxTokens(tokenArr []string, qmin int) {
+//	length := len(tokenArr)
+//	//get http 1.0 1.1  http 1.0 1.1 1.0 1.1
+//	j := len(tokenArr[0]) + 1
+//	for i := 1; i <= length-qmin; i++ {
+//		tokenSub := tokenArr[i:length]
+//		TokenSubs = append(TokenSubs, NewSubGramOffset(tokenSub, j))
+//		j += len(tokenArr[i]) + 1
+//	}
+//}
+func GenerateQmin2QmaxTokens(tokenArr []string, qmin int) {
+	length := len(tokenArr)
+	//get http 1.0 1.1  http 1.0 1.1 1.0 1.1
+	for i := 1; i <= length-qmin; i++ {
+		tokenSub := tokenArr[i:length]
+		TokenSubs = append(TokenSubs, NewSubGramOffset(tokenSub, i))
+	}
 }
 
 //根据字典D划分日志为VG
@@ -106,17 +140,27 @@ func IsSubStrOfVG(t []string, vgMap map[int][]string) bool {
 	for i := 0; i < len(t); i++ {
 		tstr += t[i]
 	}
-	for vgKey := range vgMap {
+	var keys = []int{}
+	for key := range vgMap {
+		keys = append(keys, key)
+	}
+	sort.Sort(sort.IntSlice(keys))
+	for i := 0; i < len(keys); i++ {
+		vgKey := keys[i]
 		str := vgMap[vgKey]
 		for j := 0; j < len(str); j++ {
 			strNew += str[j]
 		}
 		if strNew == tstr {
-			return false
-		} else if strings.Contains(strNew, tstr) {
-			flag = true
-			break
+			flag = false
 		}
+		if i == (len(keys)-1) && strings.Contains(strNew, tstr) {
+			flag = true
+		}
+		if i < (len(keys)-1) && strings.Contains(strNew, tstr) {
+			flag = false
+		}
+		strNew = ""
 	}
 	return flag
 }
