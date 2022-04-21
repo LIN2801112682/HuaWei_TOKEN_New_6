@@ -121,17 +121,6 @@ func VGCons(root *dictionary.TrieTreeNode, qmin int, qmax int, str string, vgMap
 		}
 	}
 }
-func IsEqualOfTwoStringArr(str1 []string, str2 []string) bool {
-	if len(str1) != len(str2) {
-		return false
-	}
-	for i := 0; i < len(str1); i++ {
-		if str1[i] != str2[i] {
-			return false
-		}
-	}
-	return true
-}
 
 func IsSubStrOfVG(t []string, vgMap map[int][]string) bool {
 	var flag = false
@@ -153,11 +142,9 @@ func IsSubStrOfVG(t []string, vgMap map[int][]string) bool {
 		}
 		if strNew == tstr {
 			flag = false
-		}
-		if i == (len(keys)-1) && strings.Contains(strNew, tstr) {
+		} else if i == (len(keys)-1) && strings.Contains(strNew, tstr) {
 			flag = true
-		}
-		if i < (len(keys)-1) && strings.Contains(strNew, tstr) {
+		} else if i < (len(keys)-1) && strings.Contains(strNew, tstr) {
 			flag = false
 		}
 		strNew = ""

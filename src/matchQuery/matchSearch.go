@@ -6,7 +6,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"index07"
-	"reflect"
 	"sort"
 	_ "strings"
 	"time"
@@ -21,17 +20,14 @@ func MatchSearch(searchStr string, root *dictionary.TrieTreeNode, indexRoot *ind
 
 	//查询每个gram对应倒排个数,并进行排序,把索引项放入sortGramInvertList
 	var sortSumInvertList = make([]SortKey, 0)
-	var sortTokenInvertList = make([]SortTokenInvertList, 0)
-	invertIndex = nil
-	indexNode = nil
 	for x := range vgMap {
 		token := vgMap[x]
 		if token != nil {
-			invertIndex = nil
-			indexNode = nil
+			var invertIndex index07.Inverted_index
+			var indexNode *index07.IndexTreeNode
 			var invertIndex2 index07.Inverted_index
 			var invertIndex3 index07.Inverted_index
-			SearchInvertedListFromCurrentNode(token, indexRoot, 0)
+			invertIndex, indexNode = SearchInvertedListFromCurrentNode(token, indexRoot, 0, invertIndex, indexNode)
 			invertIndex2 = SearchInvertedListFromChildrensOfCurrentNode(indexNode, nil)
 			if indexNode != nil && len(indexNode.AddrOffset()) > 0 {
 				invertIndex3 = TurnAddr2InvertLists(indexNode.AddrOffset(), invertIndex3)
@@ -39,11 +35,9 @@ func MatchSearch(searchStr string, root *dictionary.TrieTreeNode, indexRoot *ind
 			invertIndex = MergeMapsInvertLists(invertIndex2, invertIndex)
 			invertIndex = MergeMapsInvertLists(invertIndex3, invertIndex)
 			//fmt.Println(len(invertIndex))
-			sortSumInvertList = append(sortSumInvertList, NewSortKey(len(invertIndex), token))
-			sortTokenInvertList = append(sortTokenInvertList, NewSortTokenInvertList(token, invertIndex))
+			sortSumInvertList = append(sortSumInvertList, NewSortKey(x, len(invertIndex), token, invertIndex))
 		}
 	}
-
 	//fmt.Println(sortTokenInvertList)
 	sort.SliceStable(sortSumInvertList, func(i, j int) bool {
 		if sortSumInvertList[i].sizeOfInvertedList < sortSumInvertList[j].sizeOfInvertedList {
@@ -62,17 +56,9 @@ func MatchSearch(searchStr string, root *dictionary.TrieTreeNode, indexRoot *ind
 		tokenArr := sortSumInvertList[m].tokenArr
 		var nowSeaPosition int
 		if tokenArr != nil {
-			for key := range vgMap {
-				if reflect.DeepEqual(vgMap[key], tokenArr) {
-					nowSeaPosition = key
-				}
-			}
-			invertIndex = nil
-			for i := 0; i < len(sortTokenInvertList); i++ {
-				if reflect.DeepEqual(sortTokenInvertList[i].tokenArr, tokenArr) {
-					invertIndex = sortTokenInvertList[i].indexList
-				}
-			}
+			nowSeaPosition = sortSumInvertList[m].offset
+			var invertIndex index07.Inverted_index = nil
+			invertIndex = sortSumInvertList[m].invertedIndex
 			if invertIndex == nil {
 				return nil
 			}
@@ -127,23 +113,21 @@ func MatchSearch(searchStr string, root *dictionary.TrieTreeNode, indexRoot *ind
 	return resArr
 }
 
-var invertIndex index07.Inverted_index
-var indexNode *index07.IndexTreeNode
-
 //查询当前串对应的倒排表（叶子节点）
-func SearchInvertedListFromCurrentNode(tokenArr []string, indexRoot *index07.IndexTreeNode, i int) {
+func SearchInvertedListFromCurrentNode(tokenArr []string, indexRoot *index07.IndexTreeNode, i int, invertIndex1 index07.Inverted_index, indexNode *index07.IndexTreeNode) (index07.Inverted_index, *index07.IndexTreeNode) {
 	if indexRoot == nil {
-		return
+		return invertIndex1, indexNode
 	}
 	for j := 0; j < len(indexRoot.Children()); j++ {
 		if i < len(tokenArr)-1 && tokenArr[i] == indexRoot.Children()[j].Data() {
-			SearchInvertedListFromCurrentNode(tokenArr, indexRoot.Children()[j], i+1)
+			invertIndex1, indexNode = SearchInvertedListFromCurrentNode(tokenArr, indexRoot.Children()[j], i+1, invertIndex1, indexNode)
 		}
 		if i == len(tokenArr)-1 && tokenArr[i] == indexRoot.Children()[j].Data() { //找到那一层的倒排表
-			invertIndex = indexRoot.Children()[j].InvertedIndex()
+			invertIndex1 = indexRoot.Children()[j].InvertedIndex()
 			indexNode = indexRoot.Children()[j]
 		}
 	}
+	return invertIndex1, indexNode
 }
 
 func SearchInvertedListFromChildrensOfCurrentNode(indexNode *index07.IndexTreeNode, invertIndex2 index07.Inverted_index) index07.Inverted_index {
