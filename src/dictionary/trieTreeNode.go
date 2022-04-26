@@ -76,30 +76,34 @@ func (node *TrieTreeNode) PruneStrategyLessT() {
 //剪枝策略>T
 //剪掉最大子集，若无法剪枝则递归剪子树
 func (node *TrieTreeNode) PruneStrategyMoreT(T int) {
-	arraylength := len(node.children)
-	frequencylist := make([]int, arraylength)
-	for i := 0; i < arraylength; i++ {
-		frequencylist[i] = node.children[i].frequency
+	var freqList = make([]FreqList, len(node.children))
+	k := 0
+	for _, child := range node.children {
+		freqList[k].token = child.data
+		freqList[k].freq = child.frequency
+		k++
 	}
-	sort.Ints(frequencylist)
-	totoalsum := 0
-	for i := arraylength - 1; i >= 0; i-- {
+	sort.SliceStable(freqList, func(i, j int) bool {
+		if freqList[i].freq < freqList[j].freq {
+			return true
+		}
+		return false
+	})
+	totoalSum := 0
+	for i := k - 1; i >= 0; i-- {
 		//从大到小遍历数组
-		if totoalsum+frequencylist[i] <= T {
-			totoalsum = totoalsum + frequencylist[i]
-			for j, child := range node.children {
-				if child.frequency == frequencylist[i] {
-					//找到对应枝条，进行剪枝
-					//删除该孩子节点
-					node.children = append(node.children[:j], node.children[j+1:]...)
-					break
+		if totoalSum+freqList[i].freq <= T {
+			totoalSum = totoalSum + freqList[i].freq
+			for _, child := range node.children {
+				if child.data == freqList[i].token && child.frequency == freqList[i].freq {
+					node.children = append(node.children[:i], node.children[i+1:]...)
 				}
 			}
 		}
 	}
 	// 不存在最大子集
 	for _, child := range node.children {
-		child.PruneStrategyMoreT(T)
+		child.PruneNode(T)
 	}
 }
 

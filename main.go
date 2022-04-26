@@ -30,7 +30,7 @@ func main() {
 	fmt.Println("索引项集内存占用大小：")
 	traceMemStats()
 	fmt.Println()
-	_, indexTreeNode := index07.GenerateIndexTree("src/resources/500Index.txt", 1, 2, root) //
+	_, indexTreeNode := index07.GenerateIndexTree("src/resources/50000Index.txt", 1, 2, root) //
 	fmt.Println()
 	traceMemStats()
 	fmt.Println()

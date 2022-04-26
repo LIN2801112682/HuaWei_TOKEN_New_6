@@ -13,7 +13,6 @@ import (
 
 //根据一批日志数据通过字典树划分VG，构建索引项集
 func GenerateIndexTree(filename string, qmin int, qmax int, root *dictionary.TrieTreeNode) (*IndexTree, *IndexTreeNode) {
-	start := time.Now().UnixMicro()
 	indexTree := NewIndexTree(qmin, qmax)
 	data, err := os.Open(filename)
 	defer data.Close()
@@ -27,7 +26,6 @@ func GenerateIndexTree(filename string, qmin int, qmax int, root *dictionary.Tri
 	var sum3 int64 = 0
 	timeStamp := time.Now().Unix()
 	for {
-		start1 := time.Now().UnixMicro()
 		data, _, eof := buff.ReadLine()
 		if eof == io.EOF {
 			break
@@ -38,6 +36,7 @@ func GenerateIndexTree(filename string, qmin int, qmax int, root *dictionary.Tri
 		timeStamp++
 		sid := NewSeriesId(id, timeStamp)
 		str := string(data)
+		start1 := time.Now().UnixMicro()
 		VGCons(root, qmin, qmax, str, vgMap)
 		//.Println(vgMap)
 		var keys = []int{}
@@ -74,8 +73,7 @@ func GenerateIndexTree(filename string, qmin int, qmax int, root *dictionary.Tri
 	}
 	indexTree.cout = (int(id))
 	indexTree.UpdateIndexRootFrequency()
-	elapsed := time.Now().UnixMicro()
-	fmt.Println("构建索引项集总花费时间（us）：", elapsed-start)
+	fmt.Println("构建索引项集总花费时间（us）：", sum1+sum2)
 	fmt.Println("读取日志并划分索引项花费时间（us）：", sum1+sum2-sum3)
 	fmt.Println("插入索引树花费时间（us）：", sum3)
 	//indexTree.PrintIndexTree()
