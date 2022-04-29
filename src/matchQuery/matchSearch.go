@@ -38,7 +38,6 @@ func MatchSearch(searchStr string, root *dictionary.TrieTreeNode, indexRoot *ind
 			sortSumInvertList = append(sortSumInvertList, NewSortKey(x, len(invertIndex), token, invertIndex))
 		}
 	}
-	//fmt.Println(sortTokenInvertList)
 	sort.SliceStable(sortSumInvertList, func(i, j int) bool {
 		if sortSumInvertList[i].sizeOfInvertedList < sortSumInvertList[j].sizeOfInvertedList {
 			return true
@@ -59,6 +58,7 @@ func MatchSearch(searchStr string, root *dictionary.TrieTreeNode, indexRoot *ind
 			nowSeaPosition = sortSumInvertList[m].offset
 			var invertIndex index07.Inverted_index = nil
 			invertIndex = sortSumInvertList[m].invertedIndex
+			//fmt.Println(len(invertIndex))
 			if invertIndex == nil {
 				return nil
 			}

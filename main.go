@@ -30,7 +30,7 @@ func main() {
 	fmt.Println("索引项集内存占用大小：")
 	traceMemStats()
 	fmt.Println()
-	_, indexTreeNode := index07.GenerateIndexTree("src/resources/50000Index.txt", 1, 2, root) //
+	_, indexTreeNode := index07.GenerateIndexTree("src/resources/5000Index.txt", 1, 2, root) //
 	fmt.Println()
 	traceMemStats()
 	fmt.Println()
@@ -71,6 +71,9 @@ func main() {
 	//traceMemStats()
 	fmt.Println()*/
 
+	/*var searchQuery = "get http 1.0"
+	resInt := matchQuery.MatchSearch(searchQuery, root, indexTreeNode, 1, 2)
+	fmt.Println(len(resInt))*/
 	var searchQuery = [10]string{"get", "get english", "get english images", "get images", "get english images team_hm_header_shad.gif http 1.0", "get images s102325 gif http 1.0", "get english history history_of images cup", "images space.gif", "get http 1.0", "11187"}
 	for i := 0; i < 10; i++ {
 		resInt := matchQuery.MatchSearch(searchQuery[i], root, indexTreeNode, 1, 2) //get english venues
@@ -79,7 +82,7 @@ func main() {
 		fmt.Println("==================================================")
 	}
 
-	var searchQuery2 = [10]string{"french", "nav_tickets_off.gif", "ticket_quest_bg2", "http 1.1", "1.0", "football.gif", "http", "images", "s102438", "venue_paris_stad_header.gif"} //505-1：french.htm
+	/*var searchQuery2 = [10]string{"french", "nav_tickets_off.gif", "ticket_quest_bg2", "http 1.1", "1.0", "football.gif", "http", "images", "s102438", "venue_paris_stad_header.gif"} //505-1：french.htm
 	for i := 0; i < 10; i++ {
 		resInt := matchQuery.MatchSearch(searchQuery2[i], root, indexTreeNode, 1, 2) //get english venues
 		//fmt.Println(resInt)
@@ -93,5 +96,5 @@ func main() {
 		//fmt.Println(resInt)
 		fmt.Println(len(resInt))
 		fmt.Println("==================================================")
-	}
+	}*/
 }

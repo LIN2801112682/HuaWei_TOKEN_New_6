@@ -94,9 +94,10 @@ func (node *TrieTreeNode) PruneStrategyMoreT(T int) {
 		//从大到小遍历数组
 		if totoalSum+freqList[i].freq <= T {
 			totoalSum = totoalSum + freqList[i].freq
-			for _, child := range node.children {
-				if child.data == freqList[i].token && child.frequency == freqList[i].freq {
-					node.children = append(node.children[:i], node.children[i+1:]...)
+			for j := 0; j < len(node.children); j++ {
+				if node.children[j].data == freqList[i].token {
+					node.children = append(node.children[:j], node.children[j+1:]...)
+					break
 				}
 			}
 		}

@@ -92,6 +92,7 @@ var TokenSubs []SubTokenOffset
 //		j += len(tokenArr[i]) + 1
 //	}
 //}
+
 func GenerateQmin2QmaxTokens(tokenArr []string, qmin int) {
 	length := len(tokenArr)
 	//get http 1.0 1.1  http 1.0 1.1 1.0 1.1
